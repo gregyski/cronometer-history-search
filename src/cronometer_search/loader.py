@@ -1,7 +1,26 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+import re
 
 import pandas as pd
+
+
+_FRACTIONS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r'(\d+)\.6{10,}'), '⅔'),
+    (re.compile(r'(\d+)\.3{10,}'), '⅓'),
+    (re.compile(r'(\d+)\.75(?!\d)'), '¾'),
+    (re.compile(r'(\d+)\.50(?!\d)'), '½'),
+    (re.compile(r'(\d+)\.25(?!\d)'), '¼'),
+]
+
+
+def _format_amount(amount: str) -> str:
+    for pattern, symbol in _FRACTIONS:
+        amount = pattern.sub(
+            lambda m, s=symbol: s if m.group(1) == '0' else m.group(1) + s,
+            amount,
+        )
+    return amount
 
 
 @dataclass
@@ -41,7 +60,7 @@ def load_meals(csv_path: Path) -> list[Meal]:
         foods = [
             FoodEntry(
                 food_name=str(row["Food Name"]),
-                amount=str(row["Amount"]),
+                amount=_format_amount(str(row["Amount"])),
                 kcal=float(row["Energy (kcal)"]),
             )
             for _, row in group_df.iterrows()
