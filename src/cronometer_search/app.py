@@ -1,7 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
 from textual.events import Key
-from textual.widgets import Input, Static
+from textual.widgets import Input, Rule, Static
 from textual import on
 from rich.panel import Panel
 from rich.table import Table
@@ -60,6 +60,7 @@ class CronometerApp(App):
 
     def compose(self) -> ComposeResult:
         yield Input(placeholder="Search food name…")
+        yield Rule()
         yield VerticalScroll(id="results")
 
     def on_mount(self) -> None:
