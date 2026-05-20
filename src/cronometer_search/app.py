@@ -11,11 +11,11 @@ from cronometer_search.loader import Meal
 from cronometer_search.search import search_meals
 
 
-def _meal_panel(meal: Meal, query: str) -> Panel:
+def _meal_panel(meal: Meal, query: str, amount_col_width: int | None = None) -> Panel:
     query_lower = query.lower()
 
     table = Table.grid(padding=(0, 2), expand=True)
-    table.add_column(no_wrap=True, style="dim")
+    table.add_column(no_wrap=True, style="dim", width=amount_col_width)
     table.add_column(ratio=1)
     table.add_column(justify="right")
 
@@ -74,7 +74,11 @@ class CronometerApp(App):
     def update_results(self, event: Input.Changed) -> None:
         query = event.value
         results = search_meals(self._meals, query, self._count)
+        amount_col_width = max(
+            (len(food.amount) for meal in results for food in meal.foods),
+            default=None,
+        )
         scroll = self.query_one("#results", VerticalScroll)
         scroll.remove_children()
         for meal in results:
-            scroll.mount(Static(_meal_panel(meal, query)))
+            scroll.mount(Static(_meal_panel(meal, query, amount_col_width)))
