@@ -1,5 +1,6 @@
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
+from textual.events import Key
 from textual.widgets import Input, Static
 from textual import on
 from rich.panel import Panel
@@ -63,6 +64,10 @@ class CronometerApp(App):
 
     def on_mount(self) -> None:
         self.query_one(Input).focus()
+
+    def on_key(self, event: Key) -> None:
+        if event.key == "escape":
+            self.query_one(Input).value = ""
 
     @on(Input.Changed)
     def update_results(self, event: Input.Changed) -> None:
