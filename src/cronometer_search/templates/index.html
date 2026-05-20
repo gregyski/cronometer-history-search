@@ -71,6 +71,7 @@
                     hx-post="/reload"
                     hx-target="#reload-msg"
                     hx-swap="innerHTML"
+                    hx-on::after-request="document.querySelector('[name=count]').dispatchEvent(new Event('change'))"
                 >Reload CSV</button>
                 <span id="reload-msg"></span>
             </div>
