@@ -5,15 +5,19 @@ build-backend = "hatchling.build"
 [project]
 name = "cronometer-search"
 version = "0.1.0"
-description = "Interactive TUI for searching Cronometer food history"
+description = "TUI and web interface for searching Cronometer food history"
 requires-python = ">=3.11"
 dependencies = [
     "textual>=0.80.0",
     "pandas>=2.2.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "jinja2>=3.1.0",
 ]
 
 [project.scripts]
 cronometer-search = "cronometer_search.__main__:main"
+cronometer-websearch = "cronometer_search.web:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cronometer_search"]

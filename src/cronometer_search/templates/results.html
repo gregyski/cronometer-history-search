@@ -1,0 +1,17 @@
+{% for meal in meals %}
+<article>
+    <header><strong>{{ meal.day }}</strong> — {{ meal.group }}</header>
+    <table>
+        <tbody>
+            {% for food in meal.foods %}
+            <tr><td>{{ food.food_name | highlight(query) }}</td></tr>
+            <tr><td style="color:var(--pico-muted-color); font-size:0.85rem; padding-top:0">{{ food.amount }}</td></tr>
+            <tr><td style="text-align:right; font-size:0.85rem; padding-top:0; padding-bottom:0.75rem">{{ "%.1f" | format(food.kcal) }} kcal</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr><td style="text-align:right">Total: {{ "%.1f" | format(meal.total_kcal) }} kcal</td></tr>
+        </tfoot>
+    </table>
+</article>
+{% endfor %}

@@ -2,13 +2,17 @@
 
 ## Purpose
 
-Interactive TUI for searching personal food/meal history exported from Cronometer.com.
+Interactive TUI and web interface for searching personal food/meal history exported from Cronometer.com.
 Cronometer does not provide an API, so the user periodically exports history as CSV and drops it in `input/`.
 
 ## Tech Stack
 
 - Python 3.11+
 - [textual](https://textual.textualize.io/) — TUI framework
+- [FastAPI](https://fastapi.tiangolo.com/) + [uvicorn](https://www.uvicorn.org/) — web server
+- [Jinja2](https://jinja.palletsprojects.com/) — HTML templates
+- [htmx](https://htmx.org/) (CDN) — live search in browser without a JS framework
+- [Pico CSS](https://picocss.com/) v2 (CDN) — minimal styling, dark mode via `data-theme="dark"`
 - pandas — CSV loading and grouping
 - uv — environment and package management (preferred over pip/venv directly)
 
@@ -20,10 +24,14 @@ cronometer-history-search/
 ├── src/
 │   └── cronometer_search/
 │       ├── __init__.py
-│       ├── __main__.py         # Entry point, CLI argument parsing
+│       ├── __main__.py         # TUI entry point, CLI argument parsing
 │       ├── loader.py           # CSV discovery and parsing → structured data
-│       ├── search.py           # Search and meal-grouping logic (pure functions, no TUI imports)
-│       └── app.py              # textual TUI application
+│       ├── search.py           # Search logic (pure functions, no TUI/web imports)
+│       ├── app.py              # textual TUI application
+│       ├── web.py              # FastAPI web application
+│       └── templates/
+│           ├── index.html      # Full page (search input, count control, reload button)
+│           └── results.html    # htmx partial — meal cards only
 ├── pyproject.toml
 └── CLAUDE.md
 ```
@@ -77,47 +85,77 @@ class Meal:
 ### `search.py`
 - `search_meals(meals: list[Meal], query: str, count: int) -> list[Meal]` — case-insensitive substring match on `Food Name` only; returns up to `count` most recent meals (already newest-first from loader) that contain at least one matching food; empty query returns empty list
 
-### `app.py`
+### `app.py` (TUI)
 - Textual `App` subclass
 - Layout: search `Input` widget at top (always focused on launch), scrollable results `Container` below
 - Results update on every keystroke via `on_input_changed`
-- Each meal rendered as a distinct visual block showing:
+- Each meal rendered as a Rich `Panel` containing a `Table` showing:
   - Header: `YYYY-MM-DD — Group Name`
   - Food rows: Amount | Food Name | kcal
   - Footer: total kcal for the meal
-- Matching food names are highlighted/marked within each meal block
+- Matching food names highlighted in bold yellow via Rich `Text.stylize`
 
-### `__main__.py`
+### `web.py` (Web)
+- FastAPI `app` with a Jinja2 `templates` instance pointed at `templates/` inside the package
+- Meals loaded once at startup via `lifespan`; stored in `app.state.meals`
+- `_highlight(text, query) -> Markup` — server-side function registered as a Jinja2 filter; returns HTML-escaped text with case-insensitive matches wrapped in `<mark>`
+- Routes:
+  - `GET /` — renders `index.html` (full page)
+  - `GET /search?q=&count=3` — renders `results.html` partial; htmx swaps `#results`
+  - `POST /reload` — calls `load_meals`, updates `app.state.meals`, returns plain-text meal count; htmx swaps `#reload-msg`
+- `main()` — argparse entry point; sets module-level `_csv_path`, runs uvicorn
+
+### `__main__.py` (TUI entry point)
 - Parses CLI args with `argparse`
 - `--csv PATH` — explicit CSV path, skips auto-discovery
 - `--count N` — meals to display (default: `3`)
-- Loads data, instantiates and runs the `App`
+- Loads data, instantiates and runs the textual `App`
 
-## Search Behavior
+## Search Behavior (both interfaces)
 
 - Matches `Food Name` column only
 - Case-insensitive substring match (no fuzzy matching)
 - Empty search → show nothing
 - Minimum character threshold: constant `MIN_SEARCH_CHARS = 1` in `search.py` — increase if performance is an issue on large CSVs; the full production history CSV is used during development intentionally
 
-## Running the App
+## Web Interface Details
+
+### Templates
+- `index.html` — Pico CSS v2 and htmx loaded from CDN; `data-theme="dark"` on `<html>`; search `<input>` with `hx-get="/search" hx-trigger="input changed delay:150ms"` and `hx-include="[name='count']"`; count `<input type="number">` with `hx-get="/search" hx-trigger="change"` and `hx-include="[name='q']"`; Reload CSV `<button>` with `hx-post="/reload"`
+- `results.html` — one Pico `<article>` per meal with header, `<table>` of food rows, and a `<tfoot>` total row; food names passed through the `highlight` Jinja2 filter
+
+### Highlighting
+Implemented server-side in `web.py` as a Jinja2 filter, not in the template logic, to keep escaping correct:
+```python
+def _highlight(text: str, query: str) -> Markup:
+    pattern = re.compile(re.escape(query), re.IGNORECASE)
+    return Markup(pattern.sub(lambda m: f"<mark>{escape(m.group())}</mark>", escape(text)))
+```
+
+### CSV Reload
+Data is loaded at startup. Drop a new CSV in `input/` and click **Reload CSV** in the browser — no server restart needed. The reload button posts to `/reload` which re-runs `discover_csv` + `load_meals` and updates `app.state.meals` in place.
+
+## Running
 
 ```bash
-# Auto-discover latest CSV in input/
+# TUI — auto-discover latest CSV in input/
 uv run cronometer-search
 
-# Explicit CSV path
-uv run cronometer-search --csv path/to/export.csv
+# TUI — explicit CSV, custom count
+uv run cronometer-search --csv path/to/export.csv --count 5
 
-# Show 5 meals instead of default 3
-uv run cronometer-search --count 5
+# Web — auto-discover, default port 8000
+uv run cronometer-websearch
+
+# Web — explicit CSV and port
+uv run cronometer-websearch --csv path/to/export.csv --port 8080
 ```
 
 ## Style Guidelines
 
 - Type hints everywhere
 - Dataclasses for domain objects (see above)
-- `loader.py` and `search.py` must have no `textual` imports — keep logic decoupled from the TUI
+- `loader.py` and `search.py` must have no `textual` or `fastapi` imports — keep logic decoupled
 - No unit tests (personal tool)
 - No comments unless the WHY is non-obvious
 - pandas for CSV parsing and grouping; avoid raw `csv` module
