@@ -6,18 +6,23 @@ import pandas as pd
 
 
 _FRACTIONS: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r'(\d+)\.6{10,}'), '⅔'),
-    (re.compile(r'(\d+)\.3{10,}'), '⅓'),
-    (re.compile(r'(\d+)\.75(?!\d)'), '¾'),
-    (re.compile(r'(\d+)\.50(?!\d)'), '½'),
-    (re.compile(r'(\d+)\.25(?!\d)'), '¼'),
+    (re.compile(r'(\d+)\.6{10,}'),    '⅔'),
+    (re.compile(r'(\d+)\.3{10,}'),    '⅓'),
+    (re.compile(r'(\d+)\.875(?!\d)'), '⅞'),
+    (re.compile(r'(\d+)\.75(?!\d)'),  '¾'),
+    (re.compile(r'(\d+)\.625(?!\d)'), '⅝'),
+    (re.compile(r'(\d+)\.50(?!\d)'),  '½'),
+    (re.compile(r'(\d+)\.375(?!\d)'), '⅜'),
+    (re.compile(r'(\d+)\.25(?!\d)'),  '¼'),
+    (re.compile(r'(\d+)\.125(?!\d)'), '⅛'),
+    (re.compile(r'(\d+)\.0625(?!\d)'), '1/16'),
 ]
 
 
 def _format_amount(amount: str) -> str:
     for pattern, symbol in _FRACTIONS:
         amount = pattern.sub(
-            lambda m, s=symbol: s if m.group(1) == '0' else m.group(1) + s,
+            lambda m, s=symbol: s if m.group(1) == '0' else m.group(1) + (' ' if s[0].isdigit() else '') + s,
             amount,
         )
     return amount
