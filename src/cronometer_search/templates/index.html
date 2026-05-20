@@ -6,11 +6,24 @@
     <title>Cronometer Search</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <script src="https://unpkg.com/htmx.org@2.0/dist/htmx.min.js"></script>
+    <script>
+        function shrinkToFit(el) {
+            el.style.fontSize = '';
+            if (el.scrollWidth <= el.clientWidth) return;
+            const ratio = el.clientWidth / el.scrollWidth;
+            const current = parseFloat(getComputedStyle(el).fontSize);
+            el.style.fontSize = Math.max(8, current * ratio - 0.5) + 'px';
+        }
+        document.addEventListener('htmx:afterSwap', () =>
+            document.querySelectorAll('.food-name').forEach(shrinkToFit)
+        );
+    </script>
     <style>
         mark { padding: 0 2px; border-radius: 2px; }
         #reload-msg { font-size: 0.85rem; color: var(--pico-muted-color); }
-        table { margin-bottom: 0; }
+        table { table-layout: fixed; width: 100%; margin-bottom: 0; }
         tfoot td { font-weight: bold; }
+        .food-name { white-space: nowrap; overflow: hidden; }
         .search-bar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
         .search-bar input[type="search"] { flex: 1; margin: 0; }
         .search-bar button { margin: 0; width: auto; }
