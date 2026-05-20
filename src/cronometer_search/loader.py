@@ -19,13 +19,16 @@ _FRACTIONS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 
+_STRIP_DOT_ZERO = re.compile(r'(\d+)\.00(?!\d)')
+
+
 def _format_amount(amount: str) -> str:
     for pattern, symbol in _FRACTIONS:
         amount = pattern.sub(
             lambda m, s=symbol: s if m.group(1) == '0' else m.group(1) + (' ' if s[0].isdigit() else '') + s,
             amount,
         )
-    return amount
+    return _STRIP_DOT_ZERO.sub(r'\1', amount)
 
 
 @dataclass
