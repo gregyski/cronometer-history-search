@@ -19,18 +19,191 @@
         );
     </script>
     <style>
-        mark { padding: 0 2px; border-radius: 2px; }
-        #reload-msg { font-size: 0.85rem; color: var(--pico-muted-color); }
-        table { table-layout: fixed; width: 100%; margin-bottom: 0; }
-        tfoot td { font-weight: bold; }
-        .food-name { white-space: nowrap; overflow: hidden; }
-        .search-bar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
-        .search-bar input[type="search"] { flex: 1; margin: 0; }
-        .search-bar button { margin: 0; width: auto; }
-        .controls { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+        :root[data-theme="dark"], [data-theme="dark"] {
+        /* Warm dark — overrides Pico's cool defaults */
+        --pico-background-color: #131316;
+        --pico-card-background-color: #1c1c1f;
+        --pico-card-border-color: rgba(255,255,255,0.06);
+        --pico-card-sectioning-background-color: transparent;
+        --pico-color: #ececef;
+        --pico-muted-color: rgba(236,236,239,0.55);
+        --pico-h1-color: #fff;
+        --pico-form-element-background-color: #1f1f22;
+        --pico-form-element-border-color: rgba(255,255,255,0.08);
+        --pico-form-element-focus-color: oklch(78% 0.13 75);
+        --pico-primary: oklch(78% 0.13 75);
+        --pico-primary-hover: color-mix(in oklab, oklch(78% 0.13 75), white 18%);
+
+        --accent: oklch(78% 0.13 75);
+        --accent-soft: color-mix(in oklab, oklch(78% 0.13 75) 18%, transparent);
+        --accent-strong: color-mix(in oklab, oklch(78% 0.13 75), white 18%);
+        }
+
+        body { font-size: 16px; }
+        main.container { padding: 14px 16px 32px; max-width: 640px; }
+
+        main.container > h1 {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.45);
+        margin: 6px 2px 14px;
+        }
+
+        /* — Search bar ————————————————————————— */
+        .search-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .search-bar input[type="search"] {
+        height: 48px;
+        margin: 0;
+        padding: 0 14px 0 40px;
+        border-radius: 12px;
+        background-color: #1f1f22;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2399999e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>");
+        background-repeat: no-repeat;
+        background-position: 14px center;
+        background-size: 16px;
+        border: 1px solid rgba(255,255,255,0.08);
+        font-size: 16px;
+        color: #fff;
+        }
+        .search-bar input[type="search"]::placeholder { color: rgba(255,255,255,0.38); }
+        .search-bar input[type="search"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        background-color: #25252a;
+        outline: none;
+        }
+        .search-bar button.secondary {
+        height: 48px; width: 48px; min-width: 48px;
+        padding: 0; margin: 0;
+        border-radius: 12px;
+        background: #1f1f22;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.55);
+        font-size: 18px; line-height: 1;
+        }
+        .search-bar button.secondary:hover {
+        background: #26262b; color: #fff;
+        border-color: rgba(255,255,255,0.14);
+        }
+
+        /* — Match highlight — warm accent — */
+        mark {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        padding: 1px 4px;
+        border-radius: 4px;
+        font-weight: 500;
+        }
+
+        /* — Meal card ——————————————————————— */
+        article {
+        background: #1c1c1f;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 14px;
+        padding: 0;
+        margin: 0 0 12px;
+        overflow: hidden;
+        box-shadow: none;
+        }
+        article > header {
+        background: transparent;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding: 13px 18px 12px 22px;
+        margin-bottom: 0;
+        font-size: 0.95rem;
+        color: #fff;
+        position: relative;
+        }
+        article > header::before {
+        content: "";
+        position: absolute;
+        left: 12px; top: 14px; bottom: 14px;
+        width: 3px;
+        border-radius: 3px;
+        background: var(--accent);
+        opacity: 0.85;
+        }
+        article > header strong {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.02em;
+        color: rgba(255,255,255,0.55);
+        font-weight: 500;
+        margin-right: 2px;
+        }
+
+        /* — Table rows ———————————————————————— */
+        article table { table-layout: fixed; width: 100%; margin: 0; }
+        article tbody td { border-bottom: none !important; background: transparent; }
+
+        /* Odd rows = food name */
+        article tbody tr:nth-child(odd) td {
+        padding: 13px 18px 2px !important;
+        font-size: 1rem;
+        color: #fff;
+        font-weight: 500;
+        letter-spacing: -0.003em;
+        }
+        /* Even rows = amount + kcal */
+        article tbody tr:nth-child(even) td {
+        padding: 0 18px 13px !important;
+        font-size: 0.82rem !important;
+        color: rgba(255,255,255,0.5) !important;
+        }
+        article tbody tr:nth-child(even) td:last-child {
+        font-variant-numeric: tabular-nums;
+        }
+        /* Hairline between food entries */
+        article tbody tr:nth-child(odd):not(:first-child) td {
+        border-top: 1px solid rgba(255,255,255,0.05) !important;
+        padding-top: 15px !important;
+        }
+
+        /* — Total row ———————————————————————— */
+        article tfoot td {
+        border-top: 1px solid rgba(255,255,255,0.08) !important;
+        padding: 14px 18px !important;
+        background: rgba(255,255,255,0.015);
+        }
+        article tfoot td:first-child {
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        color: rgba(255,255,255,0.55);
+        }
+        article tfoot td:last-child {
+        color: var(--accent-strong);
+        font-weight: 600;
+        font-size: 1.05rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.005em;
+        }
+
+        /* — Settings panel ——————————————————— */
+        .controls {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        background: #1c1c1f;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+        }
         .controls label { display: flex; align-items: center; gap: 0.5rem; margin: 0; }
-        .controls input[type="number"] { width: 5rem; margin: 0; }
+        .controls input[type="number"] {
+        width: 5rem; margin: 0;
+        background: #25252a;
+        border-color: rgba(255,255,255,0.1);
+        }
         .controls button { margin: 0; width: auto; }
+        #reload-msg { font-size: 0.78rem; color: rgba(255,255,255,0.45); }
+        table { table-layout: fixed; width: 100%; margin-bottom: 0; }
+        .food-name { white-space: nowrap; overflow: hidden; }
     </style>
 </head>
 <body>
