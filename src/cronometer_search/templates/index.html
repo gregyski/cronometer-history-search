@@ -40,7 +40,7 @@
         }
 
         body { font-size: 16px; }
-        main.container { padding: 14px 16px 32px; max-width: 640px; }
+        main.container { padding: 10px 12px 24px; max-width: 640px; }
 
         main.container > h1 {
         font-size: 0.72rem;
@@ -52,9 +52,9 @@
         }
 
         /* — Search bar ————————————————————————— */
-        .search-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .search-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
         .search-bar input[type="search"] {
-        height: 48px;
+        height: 42px;
         margin: 0;
         padding: 0 14px 0 40px;
         border-radius: 12px;
@@ -75,7 +75,7 @@
         outline: none;
         }
         .search-bar button.secondary {
-        height: 48px; width: 48px; min-width: 48px;
+        height: 42px; width: 42px; min-width: 42px;
         padding: 0; margin: 0;
         border-radius: 12px;
         background: #1f1f22;
@@ -103,23 +103,23 @@
         border: 1px solid rgba(255,255,255,0.06);
         border-radius: 14px;
         padding: 0;
-        margin: 0 0 12px;
+        margin: 0 0 6px;
         overflow: hidden;
         box-shadow: none;
         }
         article > header {
         background: transparent;
         border-bottom: 1px solid rgba(255,255,255,0.05);
-        padding: 13px 18px 12px 22px;
+        padding: 5px 11px 4px 15px;
         margin-bottom: 0;
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         color: #fff;
         position: relative;
         }
         article > header::before {
         content: "";
         position: absolute;
-        left: 12px; top: 14px; bottom: 14px;
+        left: 6px; top: 7px; bottom: 6px;
         width: 3px;
         border-radius: 3px;
         background: var(--accent);
@@ -140,17 +140,19 @@
 
         /* Odd rows = food name */
         article tbody tr:nth-child(odd) td {
-        padding: 13px 18px 2px !important;
-        font-size: 1rem;
+        padding: 3px 11px 0 !important;
+        font-size: 0.92rem;
         color: #fff;
         font-weight: 500;
         letter-spacing: -0.003em;
+        line-height: 1.25;
         }
         /* Even rows = amount + kcal */
         article tbody tr:nth-child(even) td {
-        padding: 0 18px 13px !important;
-        font-size: 0.82rem !important;
+        padding: 1px 11px 3px !important;
+        font-size: 0.74rem !important;
         color: rgba(255,255,255,0.5) !important;
+        line-height: 1.2;
         }
         article tbody tr:nth-child(even) td:last-child {
         font-variant-numeric: tabular-nums;
@@ -158,13 +160,13 @@
         /* Hairline between food entries */
         article tbody tr:nth-child(odd):not(:first-child) td {
         border-top: 1px solid rgba(255,255,255,0.05) !important;
-        padding-top: 15px !important;
+        padding-top: 4px !important;
         }
 
         /* — Total row ———————————————————————— */
         article tfoot td {
         border-top: 1px solid rgba(255,255,255,0.08) !important;
-        padding: 14px 18px !important;
+        padding: 7px 11px !important;
         background: rgba(255,255,255,0.015);
         }
         article tfoot td:first-child {
