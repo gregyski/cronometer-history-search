@@ -8,11 +8,9 @@ Search personal food/meal history exported from [Cronometer](https://cronometer.
 uv sync
 ```
 
-Drop one or more Cronometer CSV exports into `input/`.
-
 ## Usage
 
-**TUI** (terminal)
+**TUI** (terminal) — requires a CSV in `input/` first
 
 ```bash
 uv run cronometer-search                   # auto-discover latest CSV in input/
@@ -26,9 +24,9 @@ uv run cronometer-websearch                # auto-discover, port 8000
 uv run cronometer-websearch --csv path/to.csv --port 8080
 ```
 
-Both interfaces perform a case-insensitive substring search on food names and display the most recent matching meals. An empty query returns no results.
+The web server starts without a CSV — use **Upload CSV** in the browser settings panel to load one. To pick up a new CSV without restarting, use **Upload CSV** or drop a file in `input/` and click **Reload CSV**.
 
-To pick up a new CSV without restarting the web server, click **Reload CSV** in the browser.
+Both interfaces perform a case-insensitive substring search on food names and display the most recent matching meals. An empty query returns no results.
 
 ## Security
 

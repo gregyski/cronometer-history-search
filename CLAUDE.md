@@ -97,13 +97,15 @@ class Meal:
 
 ### `web.py` (Web)
 - FastAPI `app` with a Jinja2 `templates` instance pointed at `templates/` inside the package
-- Meals loaded once at startup via `lifespan`; stored in `app.state.meals`
+- `_csv_path: Path | None` — module-level; `None` when no CSV exists at startup
+- Meals loaded once at startup via `lifespan`; stored in `app.state.meals` (empty list when `_csv_path` is `None`)
 - `_highlight(text, query) -> Markup` — server-side function registered as a Jinja2 filter; returns HTML-escaped text with case-insensitive matches wrapped in `<mark>`
 - Routes:
   - `GET /` — renders `index.html` (full page)
   - `GET /search?q=&count=3` — renders `results.html` partial; htmx swaps `#results`
-  - `POST /reload` — calls `load_meals`, updates `app.state.meals`, returns plain-text meal count; htmx swaps `#reload-msg`
-- `main()` — argparse entry point; sets module-level `_csv_path`, runs uvicorn
+  - `POST /reload` — calls `load_meals`, updates `app.state.meals`, returns plain-text meal count; returns error message if `_csv_path` is `None`; htmx swaps `#reload-msg`
+  - `POST /upload` — accepts `multipart/form-data` file upload (`python-multipart` required); saves to `_csv_path.parent` (or `./input/`, creating it if needed), updates `_csv_path` and `app.state.meals`, returns meal count; htmx swaps `#reload-msg`
+- `main()` — argparse entry point; creates `./input/` if absent; sets `_csv_path` via `discover_csv` or `None` if no CSV found; runs uvicorn
 
 ### `__main__.py` (TUI entry point)
 - Parses CLI args with `argparse`
@@ -121,7 +123,7 @@ class Meal:
 ## Web Interface Details
 
 ### Templates
-- `index.html` — Pico CSS v2 and htmx loaded from CDN; `data-theme="dark"` on `<html>`; search `<input>` with `hx-get="/search" hx-trigger="input changed delay:150ms"` and `hx-include="[name='count']"`; count `<input type="number">` with `hx-get="/search" hx-trigger="change"` and `hx-include="[name='q']"`; Reload CSV `<button>` with `hx-post="/reload"`
+- `index.html` — Pico CSS v2 and htmx loaded from CDN; `data-theme="dark"` on `<html>`; search `<input>` with `hx-get="/search" hx-trigger="input changed delay:150ms"` and `hx-include="[name='count']"`; count `<input type="number">` with `hx-get="/search" hx-trigger="change"` and `hx-include="[name='q']"`; Reload CSV `<button>` with `hx-post="/reload"`; Upload CSV `<label>` (styled as button) wrapping a hidden `<input type="file">` — uses `hx-post="/upload"`, `hx-encoding="multipart/form-data"`, `hx-trigger="change from:input[type='file']"` to auto-upload on file selection with no JS
 - `results.html` — one Pico `<article>` per meal with header, `<table>` of food rows, and a `<tfoot>` total row; food names passed through the `highlight` Jinja2 filter
 
 ### Highlighting
@@ -132,8 +134,8 @@ def _highlight(text: str, query: str) -> Markup:
     return Markup(pattern.sub(lambda m: f"<mark>{escape(m.group())}</mark>", escape(text)))
 ```
 
-### CSV Reload
-Data is loaded at startup. Drop a new CSV in `input/` and click **Reload CSV** in the browser — no server restart needed. The reload button posts to `/reload` which re-runs `discover_csv` + `load_meals` and updates `app.state.meals` in place.
+### CSV Reload / Upload
+The web server starts without a CSV (`app.state.meals = []`). Use **Upload CSV** in the settings panel to load one via the browser — it POSTs as multipart, saves to `./input/` (creating it if needed), and reloads meals. **Reload CSV** re-reads from the current `_csv_path` (for when a file is dropped manually). Both swap `#reload-msg` with the meal count and trigger a search refresh.
 
 ## Running
 
