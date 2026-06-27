@@ -30,6 +30,10 @@ Both interfaces perform a case-insensitive substring search on food names and di
 
 To pick up a new CSV without restarting the web server, click **Reload CSV** in the browser.
 
+## Security
+
+The web server has no authentication, authorization, or HTTPS. It is designed for **local/LAN use only** — run it on a trusted network and do not expose it to the public internet.
+
 ## Stack
 
 - [Textual](https://textual.textualize.io/) — TUI
