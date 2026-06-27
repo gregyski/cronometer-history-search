@@ -224,6 +224,19 @@
         border-radius: 6px;
         }
         #reload-msg { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-left: auto; }
+        .controls label.upload-btn {
+        cursor: pointer;
+        height: 28px;
+        padding: 0 12px;
+        font-size: 0.82rem;
+        border-radius: 6px;
+        background: #25252a;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.7);
+        display: flex; align-items: center;
+        }
+        .controls label.upload-btn:hover { background: #2c2c32; color: #fff; }
+        .controls label.upload-btn input[type="file"] { display: none; }
         table { table-layout: fixed; width: 100%; margin-bottom: 0; }
         .food-name { white-space: nowrap; overflow: hidden; }
     </style>
@@ -268,6 +281,19 @@
                     hx-swap="innerHTML"
                     hx-on::after-request="document.querySelector('[name=count]').dispatchEvent(new Event('change'))"
                 >Reload CSV</button>
+                <form
+                    hx-post="/upload"
+                    hx-encoding="multipart/form-data"
+                    hx-target="#reload-msg"
+                    hx-swap="innerHTML"
+                    hx-on::after-request="document.querySelector('[name=count]').dispatchEvent(new Event('change'))"
+                    style="display:contents"
+                >
+                    <label class="upload-btn">
+                        Upload CSV
+                        <input type="file" name="file" accept=".csv" onchange="this.form.requestSubmit()">
+                    </label>
+                </form>
                 <span id="reload-msg"></span>
             </div>
         </div>

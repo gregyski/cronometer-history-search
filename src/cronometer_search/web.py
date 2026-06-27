@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
@@ -52,6 +52,16 @@ async def search(request: Request, q: str = "", count: int = 3) -> HTMLResponse:
 
 @app.post("/reload", response_class=HTMLResponse)
 async def reload(request: Request) -> HTMLResponse:
+    request.app.state.meals = load_meals(_csv_path)
+    return HTMLResponse(f"Loaded {len(request.app.state.meals)} meals")
+
+
+@app.post("/upload", response_class=HTMLResponse)
+async def upload(request: Request, file: UploadFile = File(...)) -> HTMLResponse:
+    global _csv_path
+    dest = _csv_path.parent / (file.filename or "upload.csv")
+    dest.write_bytes(await file.read())
+    _csv_path = dest
     request.app.state.meals = load_meals(_csv_path)
     return HTMLResponse(f"Loaded {len(request.app.state.meals)} meals")
 
