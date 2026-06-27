@@ -12,7 +12,7 @@ from markupsafe import Markup, escape
 from cronometer_search.loader import Meal, discover_csv, load_meals
 from cronometer_search.search import search_meals
 
-_csv_path: Path
+_csv_path: Path | None = None
 _templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
@@ -28,7 +28,7 @@ _templates.env.filters["highlight"] = _highlight
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    app.state.meals = load_meals(_csv_path)
+    app.state.meals = load_meals(_csv_path) if _csv_path else []
     yield
 
 
@@ -52,6 +52,8 @@ async def search(request: Request, q: str = "", count: int = 3) -> HTMLResponse:
 
 @app.post("/reload", response_class=HTMLResponse)
 async def reload(request: Request) -> HTMLResponse:
+    if not _csv_path:
+        return HTMLResponse("No CSV loaded — upload one first")
     request.app.state.meals = load_meals(_csv_path)
     return HTMLResponse(f"Loaded {len(request.app.state.meals)} meals")
 
@@ -59,7 +61,9 @@ async def reload(request: Request) -> HTMLResponse:
 @app.post("/upload", response_class=HTMLResponse)
 async def upload(request: Request, file: UploadFile = File(...)) -> HTMLResponse:
     global _csv_path
-    dest = _csv_path.parent / (file.filename or "upload.csv")
+    parent = _csv_path.parent if _csv_path else Path.cwd() / "input"
+    parent.mkdir(exist_ok=True)
+    dest = parent / (file.filename or "upload.csv")
     dest.write_bytes(await file.read())
     _csv_path = dest
     request.app.state.meals = load_meals(_csv_path)
@@ -86,5 +90,13 @@ def main() -> None:
         help="port to listen on",
     )
     args = parser.parse_args()
-    _csv_path = args.csv if args.csv else discover_csv(Path.cwd() / "input")
+    if args.csv:
+        _csv_path = args.csv
+    else:
+        input_dir = Path.cwd() / "input"
+        input_dir.mkdir(exist_ok=True)
+        try:
+            _csv_path = discover_csv(input_dir)
+        except FileNotFoundError:
+            _csv_path = None
     uvicorn.run(app, host="0.0.0.0", port=args.port)
