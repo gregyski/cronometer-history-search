@@ -104,7 +104,7 @@ class Meal:
   - `GET /` — renders `index.html` (full page)
   - `GET /search?q=&count=3` — renders `results.html` partial; htmx swaps `#results`
   - `POST /reload` — calls `load_meals`, updates `app.state.meals`, returns plain-text meal count; returns error message if `_csv_path` is `None`; htmx swaps `#reload-msg`
-  - `POST /upload` — accepts `multipart/form-data` file upload (`python-multipart` required); saves to `_csv_path.parent` (or `./input/`, creating it if needed), updates `_csv_path` and `app.state.meals`, returns meal count; htmx swaps `#reload-msg`
+  - `POST /upload` — accepts `multipart/form-data` file upload (`python-multipart` required); stages the bytes to `.<name>.incoming` in `_csv_path.parent` (or `./input/`, creating it if needed), parses it, and only on success renames it into place and updates `_csv_path` and `app.state.meals`; returns meal count; htmx swaps `#reload-msg`. The `file` param is optional and all failures return **200** with an error string — htmx does not swap non-2xx responses, so raising would fail silently in the browser
 - `main()` — argparse entry point; creates `./input/` if absent; sets `_csv_path` via `discover_csv` or `None` if no CSV found; runs uvicorn
 
 ### `__main__.py` (TUI entry point)
@@ -123,7 +123,9 @@ class Meal:
 ## Web Interface Details
 
 ### Templates
-- `index.html` — Pico CSS v2 and htmx loaded from CDN; `data-theme="dark"` on `<html>`; search `<input>` with `hx-get="/search" hx-trigger="input changed delay:150ms"` and `hx-include="[name='count']"`; count `<input type="number">` with `hx-get="/search" hx-trigger="change"` and `hx-include="[name='q']"`; Reload CSV `<button>` with `hx-post="/reload"`; Upload CSV `<label>` (styled as button) wrapping a hidden `<input type="file">` — uses `hx-post="/upload"`, `hx-encoding="multipart/form-data"`, `hx-trigger="change from:input[type='file']"` to auto-upload on file selection with no JS
+- `index.html` — Pico CSS v2 and htmx loaded from CDN; `data-theme="dark"` on `<html>`; search `<input>` with `hx-get="/search" hx-trigger="input changed delay:150ms"` and `hx-include="[name='count']"`; count `<input type="number">` with `hx-get="/search" hx-trigger="change"` and `hx-include="[name='q']"`; Reload CSV `<button>` with `hx-post="/reload"`; Upload CSV `<label>` (styled as button) wrapping a hidden `<input type="file">` that carries `hx-post="/upload"`, `hx-encoding="multipart/form-data"` and `hx-trigger="change"` to auto-upload on file selection with no JS
+
+  **The `hx-post` must be on the file `<input>`, never on the wrapping `<label>`.** htmx's `processInputValue` serializes only the requesting element itself plus, if that element is an `HTMLFormElement`, its `.elements` — it never walks a non-form element's children. A `<label>` has no `name`, so `hx-post` on the label sends an empty multipart body and the server returns `422 Field required`, which htmx silently discards. `hx-on::after-request` also clears `this.value` so re-uploading the same filename still fires `change`
 - `results.html` — one Pico `<article>` per meal with header, `<table>` of food rows, and a `<tfoot>` total row; food names passed through the `highlight` Jinja2 filter
 
 ### Highlighting
@@ -136,6 +138,8 @@ def _highlight(text: str, query: str) -> Markup:
 
 ### CSV Reload / Upload
 The web server starts without a CSV (`app.state.meals = []`). Use **Upload CSV** in the settings panel to load one via the browser — it POSTs as multipart, saves to `./input/` (creating it if needed), and reloads meals. **Reload CSV** re-reads from the current `_csv_path` (for when a file is dropped manually). Both swap `#reload-msg` with the meal count and trigger a search refresh.
+
+An upload is only committed if it parses: the bytes land in a dot-prefixed staging file first, so a rejected upload leaves `input/` untouched and cannot poison `discover_csv` (which globs `*.csv` and picks by mtime) on the next restart. `lifespan` calls `load_meals` unguarded, so a bad file in `input/` would otherwise crash startup.
 
 ## Running
 

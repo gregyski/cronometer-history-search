@@ -59,15 +59,26 @@ async def reload(request: Request) -> HTMLResponse:
 
 
 @app.post("/upload", response_class=HTMLResponse)
-async def upload(request: Request, file: UploadFile = File(...)) -> HTMLResponse:
+async def upload(request: Request, file: UploadFile | None = File(None)) -> HTMLResponse:
     global _csv_path
+    # htmx swallows non-2xx responses, so failures are reported as 200 text instead
+    if file is None:
+        return HTMLResponse("No file received")
     parent = _csv_path.parent if _csv_path else Path.cwd() / "input"
-    parent.mkdir(exist_ok=True)
     dest = parent / (file.filename or "upload.csv")
-    dest.write_bytes(await file.read())
+    # staged under a dot-name so a rejected upload can never be picked up by discover_csv
+    tmp = parent / f".{dest.name}.incoming"
+    try:
+        parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_bytes(await file.read())
+        meals = load_meals(tmp)
+        tmp.replace(dest)
+    except Exception as exc:
+        tmp.unlink(missing_ok=True)
+        return HTMLResponse(f"Upload failed: {type(exc).__name__}: {exc}")
     _csv_path = dest
-    request.app.state.meals = load_meals(_csv_path)
-    return HTMLResponse(f"Loaded {len(request.app.state.meals)} meals")
+    request.app.state.meals = meals
+    return HTMLResponse(f"Loaded {len(meals)} meals")
 
 
 def main() -> None:
